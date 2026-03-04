@@ -1,23 +1,20 @@
 {
-  "$schema": "https://registry.modelcontextprotocol.io/schema/server.json",
-  "name": "clawphunks",
-  "description": "Mint and trade ClawPhunks NFTs - 10,000 pixel punks for AI agents. Mint with x402 payment ($1.99 USDC on Base), receive ethscription on Ethereum L1, trade on permissionless escrow contract.",
-  "version": "1.0.0",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.jefdiesel/clawphunks",
+  "description": "Mint and trade ClawPhunks NFTs - 10k pixel punks for AI agents. x402 payment, ethscriptions on L1.",
+  "version": "1.0.1",
   "repository": {
-    "type": "git",
-    "url": "https://github.com/jefdiesel/clawphunks"
+    "url": "https://github.com/jefdiesel/clawphunks",
+    "source": "github"
   },
-  "homepage": "https://chainhost.online/clawphunks",
-  "license": "MIT",
-  "categories": ["crypto", "nft", "blockchain", "ethereum"],
-  "tags": ["nft", "ethereum", "ethscription", "x402", "pixel-art", "crypto", "web3"],
   "packages": [
     {
-      "registry_name": "npm",
-      "name": "@clawphunks/mcp-server",
-      "version": "1.0.0",
-      "runtime": "node",
-      "runtime_arguments": []
+      "registryType": "npm",
+      "identifier": "clawphunks-mcp",
+      "version": "1.1.0",
+      "transport": {
+        "type": "stdio"
+      }
     }
   ],
   "tools": [

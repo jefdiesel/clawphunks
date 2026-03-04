@@ -13,11 +13,13 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1001.0",
+    "@coinbase/coinbase-sdk": "^0.25.0",
     "@supabase/supabase-js": "^2.98.0",
+    "clawphunks-mcp": "^1.1.0",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "sharp": "^0.33.2",
-    "viem": "^2.21.0",
+    "viem": "^2.46.3",
     "x402-express": "^0.1.0"
   },
   "devDependencies": {

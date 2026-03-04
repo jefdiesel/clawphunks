@@ -1,7 +1,12 @@
 {
-  "name": "@clawphunks/mcp-server",
-  "version": "1.0.0",
+  "name": "clawphunks-mcp",
+  "version": "1.2.0",
+  "mcpName": "io.github.jefdiesel/clawphunks",
   "description": "MCP server for ClawPhunks NFT minting and trading",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jefdiesel/clawphunks.git"
+  },
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -11,7 +16,14 @@
     "build": "tsc",
     "start": "node dist/index.js"
   },
-  "keywords": ["mcp", "nft", "ethereum", "ethscription", "clawphunks", "x402"],
+  "keywords": [
+    "mcp",
+    "nft",
+    "ethereum",
+    "ethscription",
+    "clawphunks",
+    "x402"
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
   },

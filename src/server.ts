@@ -22,6 +22,7 @@ import {
 } from './config.js';
 import { mintEthscription } from './mint.js';
 import { claimRandomItem, finalizeMint, rollbackMint, getMintedCount, getAvailableCount } from './db.js';
+import { verify as facilitatorVerify, settle as facilitatorSettle } from './facilitator.js';
 
 const app = express();
 
@@ -105,9 +106,41 @@ const account = privateKeyToAccount(privateKey);
   }
 });
 
+// ─── Self-hosted Facilitator Endpoints ───────────────────────────────────────
+
+app.post('/facilitator/verify', async (req, res) => {
+  try {
+    const { paymentPayload, paymentRequirements } = req.body;
+    const result = await facilitatorVerify(paymentPayload, paymentRequirements);
+    res.json(result);
+  } catch (err: any) {
+    res.json({
+      isValid: false,
+      invalidReason: 'error',
+      invalidMessage: err.message,
+    });
+  }
+});
+
+app.post('/facilitator/settle', async (req, res) => {
+  try {
+    const { paymentPayload, paymentRequirements } = req.body;
+    const result = await facilitatorSettle(paymentPayload, paymentRequirements);
+    res.json(result);
+  } catch (err: any) {
+    res.json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
+
 // ─── x402 Payment Middleware ──────────────────────────────────────────────────
 
-const payToAddress = process.env.PAYMENT_RECIPIENT as `0x${string}`;
+const payToAddress = (process.env.PAYMENT_RECIPIENT ?? '').trim() as `0x${string}`;
+
+// Use self-hosted facilitator on same server
+const facilitatorUrl = (process.env.FACILITATOR_URL ?? 'https://clawphunks.vercel.app/facilitator') as `https://${string}`;
 
 app.use(
   paymentMiddleware(payToAddress, {
@@ -118,6 +151,8 @@ app.use(
         description: `ClawPhunks — mint random phunk (${MINT_PRICE_USDC} USDC) + gas stipend`,
       },
     },
+  }, {
+    url: facilitatorUrl,
   })
 );
 

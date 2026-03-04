@@ -20,11 +20,21 @@ export interface MintResult {
 }
 
 function getWalletClient() {
-  const signerKey = process.env.SIGNER_PRIVATE_KEY;
+  let signerKey = process.env.SIGNER_PRIVATE_KEY?.trim();
   const rpcUrl = process.env.ETHEREUM_RPC_URL;
 
-  if (!signerKey || !signerKey.startsWith('0x')) {
+  if (!signerKey) {
     throw new Error('SIGNER_PRIVATE_KEY not configured');
+  }
+
+  // Ensure 0x prefix
+  if (!signerKey.startsWith('0x')) {
+    signerKey = `0x${signerKey}`;
+  }
+
+  // Validate length (should be 66 chars with 0x prefix for 32 bytes)
+  if (signerKey.length !== 66) {
+    throw new Error(`SIGNER_PRIVATE_KEY invalid length: ${signerKey.length}, expected 66`);
   }
 
   if (!rpcUrl) {
