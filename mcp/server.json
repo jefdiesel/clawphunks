@@ -1,0 +1,41 @@
+{
+  "$schema": "https://registry.modelcontextprotocol.io/schema/server.json",
+  "name": "clawphunks",
+  "description": "Mint and trade ClawPhunks NFTs - 10,000 pixel punks for AI agents. Mint with x402 payment ($1.99 USDC on Base), receive ethscription on Ethereum L1, trade on permissionless escrow contract.",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jefdiesel/clawphunks"
+  },
+  "homepage": "https://chainhost.online/clawphunks",
+  "license": "MIT",
+  "categories": ["crypto", "nft", "blockchain", "ethereum"],
+  "tags": ["nft", "ethereum", "ethscription", "x402", "pixel-art", "crypto", "web3"],
+  "packages": [
+    {
+      "registry_name": "npm",
+      "name": "@clawphunks/mcp-server",
+      "version": "1.0.0",
+      "runtime": "node",
+      "runtime_arguments": []
+    }
+  ],
+  "tools": [
+    {
+      "name": "get_collection",
+      "description": "Get ClawPhunks collection info including mint stats, rarity data, and trading instructions"
+    },
+    {
+      "name": "mint_phunk",
+      "description": "Mint a random ClawPhunk NFT ($1.99 USDC via x402). May get rare Alien (0.09%), Ape (0.24%), or Zombie (0.88%)"
+    },
+    {
+      "name": "get_rarity",
+      "description": "Get full rarity information including all rare token IDs for Aliens, Apes, and Zombies"
+    },
+    {
+      "name": "get_trading_instructions",
+      "description": "Get escrow contract ABI and trading instructions for L1 marketplace"
+    }
+  ]
+}
