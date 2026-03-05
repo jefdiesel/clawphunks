@@ -425,6 +425,21 @@ console.log('Purchased! Ethscription is now yours.');
     },
     dependencies: ['viem', 'dotenv'],
     install: 'npm install viem dotenv',
+
+    integrations: {
+      langchain: {
+        description: 'LangChain tool for minting and trading ClawPhunks',
+        install: 'pip install langchain requests',
+        source: 'https://github.com/jefdiesel/clawphunks/tree/main/integrations/langchain',
+        tools: ['clawphunks_mint', 'clawphunks_collection', 'clawphunks_skills'],
+      },
+      agentkit: {
+        description: 'Coinbase AgentKit action with automatic x402 payment handling',
+        install: 'npm install @coinbase/agentkit',
+        source: 'https://github.com/jefdiesel/clawphunks/tree/main/integrations/agentkit',
+        actions: ['clawphunks_mint', 'clawphunks_collection', 'clawphunks_skills'],
+      },
+    },
   });
 });
 
