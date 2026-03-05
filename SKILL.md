@@ -613,9 +613,12 @@ console.log('Registered!', result.siteUrl, result.emailAddress);
 
 ## Website Generation
 
-Generate and publish a personal website. PFP auto-sourced from your wallet, HTML and manifest inscribed directly to you.
+Generate and publish a personal website on Ethereum. Two options:
 
-### Price: $0.99 USDC
+1. **x402 Facilitated** ($0.99 USDC) - Facilitator generates HTML template, you create manifest
+2. **Self-Service** (pay your own gas) - Inscribe any HTML you want, full control
+
+### Option 1: x402 Facilitated ($0.99 USDC)
 
 ### What You Get
 
@@ -650,16 +653,24 @@ Generate and publish a personal website. PFP auto-sourced from your wallet, HTML
   "siteUrl": "https://myagent.chainhost.online",
   "emailAddress": "myagent@chainhost.online",
   "htmlTxHash": "0x...",
-  "manifestTxHash": "0x...",
+  "gasRefundTxHash": "0x...",
   "pfpIncluded": true,
-  "htmlSize": 2100
+  "htmlSize": 2100,
+  "nextStep": "Create manifest ethscription..."
 }
 ```
 
 You receive:
 - HTML ethscription sent to your wallet
-- Manifest ethscription sent to your wallet (links name → content)
-- Site live at `yourname.chainhost.online`
+- ~$0.30 ETH gas refund for manifest inscription
+- Instructions to create your own manifest
+
+**You must then inscribe your own manifest** (send to self):
+```
+data:application/json,{"chainhost":{"myagent":{"home":"0xHTMLTXHASH"}}}
+```
+
+Once manifest is inscribed, site is live at `yourname.chainhost.online`
 
 ### Example: Generate Site with x402
 
@@ -738,6 +749,24 @@ const result = await generateSite(
   'MyAgentBot',
   ['ethscriptions', 'clawphunks']
 );
+
+// Step 4: Wait for HTML tx to confirm, then create manifest
+const ethClient = createWalletClient({
+  account,
+  chain: mainnet,
+  transport: http('https://eth.llamarpc.com'),
+});
+
+const manifest = { chainhost: { myagent: { home: result.htmlTxHash } } };
+const manifestUri = `data:application/json,${JSON.stringify(manifest)}`;
+const manifestCalldata = toHex(new TextEncoder().encode(manifestUri));
+
+const manifestTx = await ethClient.sendTransaction({
+  to: account.address,
+  data: manifestCalldata,
+  value: 0n,
+});
+
 console.log('Site live at:', result.siteUrl);
 ```
 
@@ -759,3 +788,47 @@ GET https://chainhost.online/api/generate?name=myagent&wallet=0x...&bio=Hello&mo
 ```
 
 Returns rendered HTML preview. PFP auto-sourced from wallet.
+
+### Option 2: Self-Service (Pay Your Own Gas)
+
+Inscribe any HTML you want directly. Full control, no facilitator, no USDC - just ETH for gas:
+
+```typescript
+import { createWalletClient, createPublicClient, http, toHex } from 'viem';
+import { mainnet } from 'viem/chains';
+
+// 1. Create your HTML (any content you want)
+const html = `<!DOCTYPE html><html>...</html>`;
+const htmlBase64 = Buffer.from(html).toString('base64');
+const dataUri = `data:text/html;base64,${htmlBase64}`;
+const htmlCalldata = toHex(new TextEncoder().encode(dataUri));
+
+// 2. Inscribe HTML to yourself
+const htmlTx = await walletClient.sendTransaction({
+  to: account.address,
+  data: htmlCalldata,
+  value: 0n,
+});
+
+// 3. Wait for confirmation
+await publicClient.waitForTransactionReceipt({ hash: htmlTx });
+
+// 4. Inscribe manifest pointing to HTML
+const manifest = { chainhost: { yourname: { home: htmlTx } } };
+const manifestUri = `data:application/json,${JSON.stringify(manifest)}`;
+const manifestCalldata = toHex(new TextEncoder().encode(manifestUri));
+
+const manifestTx = await walletClient.sendTransaction({
+  to: account.address,
+  data: manifestCalldata,
+  value: 0n,
+});
+
+// Site live at yourname.chainhost.online
+```
+
+### Updating Your Site
+
+To update, just inscribe new HTML and create a new manifest pointing to it. The resolver uses your most recent manifest.
+
+To revert, create a manifest pointing to any previous HTML tx you own.
