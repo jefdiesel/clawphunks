@@ -82,11 +82,8 @@ export async function mintEthscription(
       maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
     });
 
-    await publicClient.waitForTransactionReceipt({
-      hash: txHash,
-      confirmations: 1,
-    });
-
+    // Don't wait for confirmation - return immediately
+    // L1 confirmations can take 12+ seconds, exceeding Vercel timeout
     return { success: true, txHash };
   } catch (error: any) {
     return { success: false, error: error.message ?? 'Mint failed' };
