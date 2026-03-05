@@ -16,6 +16,10 @@
       "dest": "/public/llms.txt"
     },
     {
+      "src": "/skill.md",
+      "dest": "/public/skill.md"
+    },
+    {
       "src": "/.well-known/agent.json",
       "dest": "/public/.well-known/agent.json"
     },

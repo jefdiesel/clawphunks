@@ -61,6 +61,37 @@ function getWalletClient() {
  * Mint an ethscription to recipient
  * dataURI comes from Supabase (pre-built with ESIP6 format)
  */
+/**
+ * Mint a name ethscription (data:,name format)
+ */
+export async function mintName(
+  recipient: string,
+  name: string
+): Promise<MintResult> {
+  const { publicClient, walletClient } = getWalletClient();
+
+  // Name format: data:,{name}
+  const content = `data:,${name}`;
+  const calldataHex = toHex(new TextEncoder().encode(content));
+
+  try {
+    const feeData = await publicClient.estimateFeesPerGas();
+
+    // Send to recipient (no gas stipend for names, just the inscription)
+    const txHash = await walletClient.sendTransaction({
+      to: recipient as `0x${string}`,
+      data: calldataHex,
+      value: 0n,
+      maxFeePerGas: feeData.maxFeePerGas,
+      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+    });
+
+    return { success: true, txHash };
+  } catch (error: any) {
+    return { success: false, error: error.message ?? 'Name registration failed' };
+  }
+}
+
 export async function mintEthscription(
   recipient: string,
   dataURI: string

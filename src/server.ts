@@ -24,7 +24,9 @@ import {
   GAS_STIPEND_WEI,
   ESCROW_CONTRACT,
 } from './config.js';
-import { mintEthscription } from './mint.js';
+
+const NAME_PRICE_USDC = '0.99';
+import { mintEthscription, mintName } from './mint.js';
 import { claimRandomItem, finalizeMint, rollbackMint, getMintedCount, getAvailableCount } from './db.js';
 import { verify as facilitatorVerify, settle as facilitatorSettle } from './facilitator.js';
 
@@ -440,6 +442,78 @@ console.log('Purchased! Ethscription is now yours.');
         actions: ['clawphunks_mint', 'clawphunks_collection', 'clawphunks_skills'],
       },
     },
+
+    // ─── Name Registration ─────────────────────────────────────────────────────
+    nameRegistration: {
+      description: 'Register an on-chain identity. Get a name, subdomain, and email address.',
+      price: '0.99 USDC',
+      flow: [
+        '1. Search for availability: GET /names/search?name=yourname',
+        '2. If available, register with x402 payment: POST /names/register',
+      ],
+      endpoints: {
+        search: {
+          method: 'GET',
+          url: '/names/search?name=yourname',
+          auth: 'none',
+          response: {
+            name: 'yourname',
+            available: true,
+            price: '0.99 USDC',
+            registerEndpoint: 'POST /names/register',
+          },
+        },
+        register: {
+          method: 'POST',
+          url: '/names/register',
+          auth: 'x402 (0.99 USDC on Base)',
+          body: { name: 'yourname', recipient: '0xYourAddress' },
+          response: {
+            success: true,
+            name: 'yourname',
+            txHash: '0x...',
+            siteUrl: 'https://yourname.chainhost.online',
+            emailAddress: 'yourname@chainhost.online',
+          },
+        },
+      },
+      rules: {
+        characters: 'Lowercase URL-safe only: a-z, 0-9, hyphens',
+        length: '1-32 characters',
+        noStartEndHyphen: 'Cannot start or end with hyphen',
+        firstComeFirstServed: 'Names are permanent and non-transferable once registered',
+      },
+      whatYouGet: [
+        'On-chain name (ethscription) - permanent, uncensorable',
+        'Subdomain: yourname.chainhost.online',
+        'Email: yourname@chainhost.online',
+        'Resolvable identity: chainhost.online/resolve/yourname',
+      ],
+      exampleCode: `
+// Step 1: Check availability
+const searchRes = await fetch('https://clawphunks.vercel.app/names/search?name=myagent');
+const { available, price } = await searchRes.json();
+
+if (!available) {
+  console.log('Name taken, try another');
+  process.exit(1);
+}
+
+// Step 2: Register with x402 payment (same pattern as minting)
+// Sign EIP-3009 authorization for 0.99 USDC, send with X-PAYMENT header
+const registerRes = await fetch('https://clawphunks.vercel.app/names/register', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-PAYMENT': base64PaymentPayload, // Same x402 flow as /mint
+  },
+  body: JSON.stringify({ name: 'myagent', recipient: account.address }),
+});
+
+const { txHash, siteUrl, emailAddress } = await registerRes.json();
+console.log('Registered! Site:', siteUrl, 'Email:', emailAddress);
+`.trim(),
+    },
   });
 });
 
@@ -615,6 +689,70 @@ const account = privateKeyToAccount(privateKey);
   }
 });
 
+// ─── Name Registration ────────────────────────────────────────────────────────
+
+// Validate name: lowercase URL-safe only (a-z, 0-9, hyphen), 1-32 chars
+function validateName(name: string): { valid: boolean; error?: string } {
+  if (!name || name.length < 1) {
+    return { valid: false, error: 'Name required' };
+  }
+  if (name.length > 32) {
+    return { valid: false, error: 'Name too long (max 32 chars)' };
+  }
+  if (!/^[a-z0-9-]+$/.test(name)) {
+    return { valid: false, error: 'Lowercase URL-safe only: a-z, 0-9, hyphens. No capitals, spaces, or special characters.' };
+  }
+  if (name.startsWith('-') || name.endsWith('-')) {
+    return { valid: false, error: 'Name cannot start or end with hyphen' };
+  }
+  return { valid: true };
+}
+
+// Check if name is available via ethscriptions API
+async function checkNameAvailable(name: string): Promise<{ available: boolean; owner?: string }> {
+  const content = `data:,${name}`;
+  const msgBuffer = new TextEncoder().encode(content);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const sha = Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+
+  const res = await fetch(`https://api.ethscriptions.com/v2/ethscriptions/exists/0x${sha}`);
+  const data = await res.json();
+
+  if (data.result?.exists) {
+    return { available: false, owner: data.result.ethscription.current_owner };
+  }
+  return { available: true };
+}
+
+// GET /names/search - Check name availability (no auth required)
+app.get('/names/search', async (req, res) => {
+  try {
+    const name = (req.query.name as string || '').toLowerCase().trim();
+
+    const validation = validateName(name);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    const { available, owner } = await checkNameAvailable(name);
+
+    res.json({
+      name,
+      available,
+      owner: owner || null,
+      price: available ? `${NAME_PRICE_USDC} USDC` : null,
+      registerEndpoint: available ? 'POST /names/register' : null,
+      resolveUrl: `https://chainhost.online/resolve/${name}`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /names/register is defined after paymentMiddleware below
+
 // ─── Self-hosted Facilitator Endpoints ───────────────────────────────────────
 
 app.post('/facilitator/verify', async (req, res) => {
@@ -658,6 +796,13 @@ app.use(
       network: isTestnet ? 'base-sepolia' : 'base',
       config: {
         description: `ClawPhunks — mint random phunk (${MINT_PRICE_USDC} USDC) + gas stipend`,
+      },
+    },
+    'POST /names/register': {
+      price: `$${NAME_PRICE_USDC}`,
+      network: isTestnet ? 'base-sepolia' : 'base',
+      config: {
+        description: `Chainhost — register ethscription name (${NAME_PRICE_USDC} USDC)`,
       },
     },
   }, {
@@ -712,6 +857,65 @@ app.post('/mint', async (req, res) => {
   } catch (err: any) {
     console.error('[mint] error:', err);
     res.status(500).json({ error: err.message ?? 'Mint failed' });
+  }
+});
+
+// ─── Name Registration (x402 Gated) ───────────────────────────────────────────
+
+app.post('/names/register', async (req, res) => {
+  try {
+    const { name: rawName, recipient } = req.body;
+    const name = (rawName || '').toLowerCase().trim();
+
+    // Validate name
+    const validation = validateName(name);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    // Validate recipient
+    if (!recipient || !/^0x[0-9a-fA-F]{40}$/.test(recipient)) {
+      return res.status(400).json({ error: 'Invalid recipient address' });
+    }
+
+    // Check availability
+    const { available, owner } = await checkNameAvailable(name);
+    if (!available) {
+      return res.status(409).json({
+        error: 'Name already taken',
+        owner,
+        resolveUrl: `https://chainhost.online/resolve/${name}`,
+      });
+    }
+
+    console.log(`[names] Registering "${name}" to ${recipient}`);
+
+    // Mint the name
+    const result = await mintName(recipient, name);
+
+    if (!result.success || !result.txHash) {
+      return res.status(500).json({ error: result.error ?? 'Registration failed' });
+    }
+
+    console.log(`[names] ✓ "${name}" → ${recipient} | tx: ${result.txHash}`);
+
+    res.json({
+      success: true,
+      name,
+      recipient,
+      txHash: result.txHash,
+      ethscriptionId: result.txHash,
+      resolveUrl: `https://chainhost.online/resolve/${name}`,
+      siteUrl: `https://${name}.chainhost.online`,
+      emailAddress: `${name}@chainhost.online`,
+      nextSteps: {
+        uploadSite: `https://chainhost.online/upload?name=${name}`,
+        checkMail: `https://chainhost.online/mail`,
+      },
+    });
+  } catch (err: any) {
+    console.error('[names] error:', err);
+    res.status(500).json({ error: err.message ?? 'Registration failed' });
   }
 });
 
