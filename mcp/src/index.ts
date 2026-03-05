@@ -179,9 +179,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     case 'get_mint_code': {
       const code = `
+// IMPORTANT: Wallet Setup
+// 1. If you have an existing EVM wallet, use that private key
+// 2. If generating a new wallet, IMMEDIATELY save the private key:
+//    - Create .env file with: AGENT_PRIVATE_KEY=0x...
+//    - Create .gitignore with: .env
+//    - Do this BEFORE minting to avoid losing access to your NFT
+// 3. Fund wallet with $2+ USDC on Base network
+
 import { createWalletClient, http, keccak256, encodePacked } from 'viem';
 import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
+import { generatePrivateKey } from 'viem/accounts'; // For new wallet
+import * as fs from 'fs';
+
+// Generate new wallet if needed (save this immediately!)
+// const newKey = generatePrivateKey();
+// fs.writeFileSync('.env', \`AGENT_PRIVATE_KEY=\${newKey}\\n\`);
+// fs.writeFileSync('.gitignore', '.env\\n');
 
 const MINT_API = 'https://clawphunks.vercel.app/mint';
 const USDC_BASE = '${USDC_BASE}';
@@ -238,7 +253,10 @@ async function mintClawPhunk(privateKey, recipient) {
 }
 
 // Usage:
-const result = await mintClawPhunk('0xYOUR_PRIVATE_KEY', '0xYOUR_ADDRESS');
+// Load from .env or use existing wallet
+const privateKey = process.env.AGENT_PRIVATE_KEY || '0xYOUR_PRIVATE_KEY';
+const account = privateKeyToAccount(privateKey);
+const result = await mintClawPhunk(privateKey, account.address);
 console.log('Minted:', result.tokenId, result.txHash);
 `.trim();
 
@@ -246,7 +264,7 @@ console.log('Minted:', result.tokenId, result.txHash);
         content: [
           {
             type: 'text',
-            text: `Complete x402 mint code:\n\n\`\`\`typescript\n${code}\n\`\`\`\n\nRequires: npm install viem\nNeeds: $1.99 USDC on Base in your wallet`,
+            text: `Complete x402 mint code:\n\n\`\`\`typescript\n${code}\n\`\`\`\n\nRequires: npm install viem dotenv\nNeeds: $1.99 USDC on Base in your wallet\n\nIMPORTANT: Save your private key to .env BEFORE minting! If you lose context, you lose access to your NFT.`,
           },
         ],
       };
@@ -300,9 +318,15 @@ console.log('Minted:', result.tokenId, result.txHash);
 
     case 'get_trading_instructions': {
       const code = `
+// IMPORTANT: Wallet Setup
+// 1. Use your existing EVM wallet private key from .env
+// 2. If new wallet, save to .env with .gitignore FIRST
+// 3. The same wallet works on Base (USDC) and L1 (ETH for gas)
+
 import { createWalletClient, createPublicClient, http, keccak256, encodePacked, parseEther, encodeFunctionData } from 'viem';
 import { mainnet, base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
+import 'dotenv/config';
 
 const MINT_API = 'https://clawphunks.vercel.app/mint';
 const USDC_BASE = '${USDC_BASE}';
@@ -364,7 +388,9 @@ async function mintAndList(privateKey, listPriceEth) {
 }
 
 // Usage:
-await mintAndList('0xYOUR_PRIVATE_KEY', '0.5'); // List at 0.5 ETH
+const privateKey = process.env.AGENT_PRIVATE_KEY;
+if (!privateKey) throw new Error('Set AGENT_PRIVATE_KEY in .env first!');
+await mintAndList(privateKey, '0.5'); // List at 0.5 ETH
 `.trim();
 
       return {

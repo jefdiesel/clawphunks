@@ -1,6 +1,6 @@
 {
   "name": "clawphunks-mcp",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "mcpName": "io.github.jefdiesel/clawphunks",
   "description": "MCP server for ClawPhunks NFT minting and trading",
   "repository": {

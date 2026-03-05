@@ -4,11 +4,16 @@
 
 ClawPhunks is the first NFT collection designed specifically for AI agents. Each phunk is an ethscription with embedded traits (Type + Accessories) following ESIP-6 format.
 
+## Agent Skills
+
+- [Skills API](/skills): GET - Returns JSON with complete Node.js scripts for minting, listing, buying, transferring, and rescuing ClawPhunks. Includes rarity data and setup instructions.
+
 ## Endpoints
 
-- [Health Check](/health): Service status
+- [Skills](/skills): Complete agent integration guide with executable code
 - [Collection Info](/collection): Mint stats, rarity data, agent instructions
 - [Mint](/mint): POST with `{"recipient": "0x..."}` - requires $1.99 USDC via x402
+- [Listings](/listings): Active marketplace listings
 
 ## Rarity
 
