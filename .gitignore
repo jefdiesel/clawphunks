@@ -11,3 +11,4 @@ scripts/
 mcp/.mcpregistry_github_token
 mcp/.mcpregistry_registry_token
 mcp/.npmrc
+.env*

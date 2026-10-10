@@ -1,0 +1,15 @@
+{
+  "name": "clawphunks",
+  "account_id": "1e154bc12873eef5423dffecfdeae043",
+  "main": "cf/worker.ts",
+  "compatibility_date": "2025-09-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  // public/ was served by @vercel/static (llms.txt, skill.md, .well-known/*); everything else hits Express.
+  "assets": { "directory": "./public", "run_worker_first": false },
+  "vars": {
+    "FACILITATOR_URL": "https://clawphunks.wrapit.workers.dev/facilitator"
+  }
+}
