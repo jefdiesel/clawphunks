@@ -12,10 +12,15 @@ let current: { env: unknown; ctx: ExecutionContext } | null = null;
 const selfHost = (() => {
   try { return new URL(process.env.FACILITATOR_URL ?? "").host; } catch { return ""; }
 })();
-const selfAwareFetch: typeof fetch = (input, init) => {
+const selfAwareFetch: typeof fetch = async (input, init) => {
   const req = new Request(input as RequestInfo, init);
   if (selfHost && current && new URL(req.url).host === selfHost) {
-    return (handler as any).fetch(req, current.env, current.ctx);
+    // Buffer the body: streamed bodies from the axios fetch adapter can arrive empty at the Node server.
+    const body = req.method === "GET" || req.method === "HEAD" ? undefined : await req.arrayBuffer();
+    const headers = new Headers(req.headers);
+    if (body && !headers.has("content-type")) headers.set("content-type", "application/json");
+    const local = new Request(req.url, { method: req.method, headers, body });
+    return (handler as any).fetch(local, current.env, current.ctx);
   }
   return fetch(req);
 };
