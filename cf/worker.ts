@@ -19,6 +19,8 @@ const selfAwareFetch: typeof fetch = async (input, init) => {
     const body = req.method === "GET" || req.method === "HEAD" ? undefined : await req.arrayBuffer();
     const headers = new Headers(req.headers);
     if (body && !headers.has("content-type")) headers.set("content-type", "application/json");
+    // body-parser skips bodies without content-length/transfer-encoding.
+    if (body) headers.set("content-length", String(body.byteLength));
     const local = new Request(req.url, { method: req.method, headers, body });
     return (handler as any).fetch(local, current.env, current.ctx);
   }
